@@ -12,15 +12,20 @@ namespace CairoDesktop
     /// </summary>
     public partial class App : Application
     {
+        private static bool _errorVisible = false;
+
+        public static new App Current => Application.Current as App;
+
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
             if (Configuration.Settings.Instance.ForceSoftwareRendering)
+            {
                 RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
+            }
         }
 
-        private static bool errorVisible = false;
 
         private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
@@ -45,9 +50,9 @@ namespace CairoDesktop
 
             try
             {
-                if (!errorVisible)
+                if (!_errorVisible)
                 {
-                    errorVisible = true;
+                    _errorVisible = true;
 
                     // Automatically restart for known render thread failure messages.
                     if (e.Exception.Message.StartsWith("UCEERR_RENDERTHREADFAILURE"))
@@ -65,7 +70,7 @@ namespace CairoDesktop
                         }
                     }
 
-                    errorVisible = false;
+                    _errorVisible = false;
                 }
             }
             catch

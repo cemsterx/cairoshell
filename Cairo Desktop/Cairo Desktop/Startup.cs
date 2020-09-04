@@ -1,19 +1,14 @@
 ﻿namespace CairoDesktop
 {
-    using CairoDesktop.Common.Helpers;
-    using CairoDesktop.Common.Logging;
+    using System;
+    using System.Diagnostics;
+    using System.Windows;
+    using System.Windows.Threading;
     using CairoDesktop.Configuration;
     using CairoDesktop.WindowsTray;
     using Common;
     using Interop;
-    using Microsoft.Win32;
     using SupportingClasses;
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Threading.Tasks;
-    using System.Windows;
-    using System.Windows.Threading;
 
     /// <summary>
     /// Handles the startup of the application, including ensuring that only a single instance is running.
@@ -38,7 +33,12 @@
             #region Initialization Routines
 
             ProcessCommandLineArgs(args);
-            if(!SingleInstanceCheck()) return;
+
+            if (!SingleInstanceCheck())
+            {
+                return;
+            }
+
             SetShellReadyEvent();
 
             SetupSettings(); // run this before logging setup so that preferences are always used
@@ -52,17 +52,17 @@
             SetSystemKeyboardShortcuts();
 
             // Move to App??? app.SetupPluginSystem();
-            SetupPluginSystem(); // This will Load the Core Plugin and all other, will either reference it as a dependency or dont need it to be started first
+            SetupPluginSystem(); // This will Load the Core Plugin and all other, will either reference it as a dependency or don't need it to be started first
 
             #endregion
 
             App app = new App();
             app.InitializeComponent();  // This sets up the Unhandled Exception stuff... 
 
-            setTheme(app);
+            SetTheme(app);
 
 
-            // Future: This should be moved to whatever plugin is responsible for Taskbar stuff
+            // Future: This should be moved to whatever plugin is responsible for TaskBar stuff
             if (Settings.Instance.EnableTaskbar)
             {
                 AppBarHelper.SetWinTaskbarState(AppBarHelper.WinTaskbarState.AutoHide);
@@ -75,7 +75,7 @@
             WindowManager.Instance.MenuBarWindows.Add(initialMenuBar);
             initialMenuBar.Show();
 
-            // Future: This should be moved to whatever plugin is responsible for Taskbar stuff
+            // Future: This should be moved to whatever plugin is responsible for TaskBar stuff
             if (Settings.Instance.EnableTaskbar)
             {
                 Taskbar initialTaskbar = new Taskbar(System.Windows.Forms.Screen.PrimaryScreen);
@@ -87,7 +87,7 @@
             WindowManager.Instance.InitialSetup();
 
             // Future: This should be moved to whatever plugin is responsible for SystemTray stuff. Possibly Core with no UI, then have a plugin that gives the UI?
-            // Don't allow showing both the Windows taskbar and the Cairo tray
+            // Don't allow showing both the Windows TaskBar and the Cairo tray
             if (Settings.Instance.EnableSysTray && (Settings.Instance.EnableTaskbar || Shell.IsCairoRunningAsShell))
             {
                 NotificationArea.Instance.Initialize();
@@ -134,13 +134,11 @@
         {
             try
             {
-                // run the program again
                 Process current = new Process();
                 current.StartInfo.FileName = AppDomain.CurrentDomain.BaseDirectory + "CairoDesktop.exe";
                 current.StartInfo.Arguments = "/restart";
                 current.Start();
 
-                // close this instance
                 Shutdown();
             }
             catch
@@ -156,7 +154,7 @@
             if (Shell.IsCairoRunningAsShell)
             {
                 WindowManager.ResetWorkArea();
-                indicateGracefulShutdown();
+                IndicateGracefulShutdown();
             }
 
             Shell.DisposeIml();
@@ -165,14 +163,14 @@
             Application.Current?.Dispatcher.Invoke(() => Application.Current?.Shutdown(), DispatcherPriority.Normal);
         }
 
-        private static void indicateGracefulShutdown()
+        private static void IndicateGracefulShutdown()
         {
             // WinLogon will automatically launch the local machine shell if AutoRestartShell is enabled and the shell window process exits
             // setting the exit status to 1 indicates that we are shutting down gracefully and do not want the local machine shell to restart
             Environment.ExitCode = 1;
         }
 
-        private static void setTheme(App app)
+        private static void SetTheme(App app)
         {
             // Themes are very UI centric. We should devise a way of having Plugins/Extensions contribute to this.
             string theme = Settings.Instance.CairoTheme;
